@@ -32,6 +32,16 @@
   };
 
   const sanitizeHtmlNode = (node) => {
+    const headerWrapper = node.querySelector('#yt-header-wrapper');
+    if (headerWrapper) {
+      const headerTextEl = headerWrapper.querySelector('h1, h2, h3, h4, h5, span, p, strong');
+      if (headerTextEl) {
+        headerWrapper.replaceWith(headerTextEl);
+      } else {
+        headerWrapper.remove();
+      }
+    }
+
     node.querySelectorAll('script, style, button, [role="button"], #yt-inline-copy-btn, .artdeco-button').forEach(el => el.remove());
     const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
     const toClean = [];
@@ -134,11 +144,30 @@
                           
     if (descContainer) {
       const clone = descContainer.cloneNode(true);
+      
+      const headerInClone = clone.querySelector('#yt-header-wrapper');
+      if (headerInClone) {
+        const headerText = headerInClone.querySelector('h1, h2, h3, h4, h5, span, p, strong')?.innerText || 'About the job';
+        const spacer = document.createTextNode('\n\n');
+        headerInClone.parentNode.insertBefore(spacer, headerInClone.nextSibling);
+        headerInClone.replaceWith(document.createTextNode(headerText));
+      }
+
       const btnInClone = clone.querySelector('#yt-inline-copy-btn');
       if (btnInClone) btnInClone.remove();
+      
       description = clone.innerText.trim();
     } else {
       const clone = containerToCopy.cloneNode(true);
+      
+      const headerInClone = clone.querySelector('#yt-header-wrapper');
+      if (headerInClone) {
+        const headerText = headerInClone.querySelector('h1, h2, h3, h4, h5, span, p, strong')?.innerText || 'About the job';
+        const spacer = document.createTextNode('\n\n');
+        headerInClone.parentNode.insertBefore(spacer, headerInClone.nextSibling);
+        headerInClone.replaceWith(document.createTextNode(headerText));
+      }
+
       clone.querySelectorAll('button, .artdeco-button, #yt-inline-copy-btn, [role="button"], script, style, .jobs-apply-button--top-card').forEach(el => el.remove());
       description = clone.innerText.trim();
     }
