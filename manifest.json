@@ -4,7 +4,19 @@
   "version": "1.0.0",
   "description": "Add a one-click button to easily copy job descriptions on LinkedIn.",
   "icons": {
+    "16": "icon.png",
+    "32": "icon.png",
+    "48": "icon.png",
     "128": "icon.png"
+  },
+  "action": {
+    "default_icon": {
+      "16": "icon.png",
+      "32": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    },
+    "default_title": "LinkedIn Job Description Copier"
   },
   "content_scripts": [
     {
