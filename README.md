@@ -2,6 +2,8 @@
 
 A lightweight Chrome Extension that adds a one-click button to copy job descriptions from LinkedIn job postings.
 
+![How it looks](img/image.png)
+
 ## Features
 - **Instant Copy**: Copy the entire job description plain text with a single click.
 - **Visual Feedback**: The button turns green and shows "Copied!" for a few seconds upon successful copying.
