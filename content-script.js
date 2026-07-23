@@ -31,6 +31,38 @@
     }
   };
 
+  const sanitizeHtmlNode = (node) => {
+    node.querySelectorAll('script, style, button, [role="button"], #yt-inline-copy-btn, .artdeco-button').forEach(el => el.remove());
+    const walker = document.createTreeWalker(node, NodeFilter.SHOW_ELEMENT);
+    const toClean = [];
+    let current = walker.currentNode;
+    while (current) {
+      toClean.push(current);
+      current = walker.nextNode();
+    }
+    toClean.forEach(el => {
+      Array.from(el.attributes).forEach(attr => {
+        if (attr.name === 'href') return;
+        el.removeAttribute(attr.name);
+      });
+    });
+    return node;
+  };
+
+  const copyRichText = (plainText, htmlText) => {
+    if (navigator.clipboard && window.ClipboardItem) {
+      try {
+        const htmlBlob = new Blob([htmlText], { type: 'text/html' });
+        const textBlob = new Blob([plainText], { type: 'text/plain' });
+        const item = new ClipboardItem({ 'text/html': htmlBlob, 'text/plain': textBlob });
+        return navigator.clipboard.write([item]).catch(() => copyText(plainText));
+      } catch (err) {
+        return copyText(plainText);
+      }
+    }
+    return copyText(plainText);
+  };
+
   const getJobDetailsContainer = () => {
     const leafNodes = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, span, p, strong'));
     const aboutHeader = leafNodes.find(el => {
@@ -136,7 +168,6 @@
   };
 
   const insertCopyButton = () => {
-    // 1. Locate the "About the job" heading leaf node on the page
     const leafNodes = Array.from(document.querySelectorAll('h1, h2, h3, h4, h5, span, p, strong, div'));
     const aboutHeader = leafNodes.find(el => {
       const text = el.textContent ? el.textContent.trim().toLowerCase() : '';
@@ -145,9 +176,8 @@
 
     if (!aboutHeader) return;
 
-    // Check if the button is already added in front of this specific header
     const parent = aboutHeader.parentNode;
-    if (!parent || parent.querySelector('#yt-inline-copy-btn')) return;
+    if (!parent || parent.querySelector('#yt-inline-copy-btn') || parent.id === 'yt-header-wrapper') return;
 
     const containerToCopy = getJobDetailsContainer();
     if (!containerToCopy) return;
@@ -158,22 +188,21 @@
     btn.style.alignItems = 'center';
     btn.style.justifyContent = 'center';
     btn.style.gap = '6px';
-    btn.style.padding = '6px 16px';
-    btn.style.marginBottom = '16px';
-    btn.style.fontSize = '14px';
+    btn.style.padding = '4px 12px';
+    btn.style.fontSize = '12px';
     btn.style.fontWeight = '600';
     btn.style.color = '#ffffff';
     btn.style.backgroundColor = '#0A66C2';
     btn.style.border = 'none';
-    btn.style.borderRadius = '16px';
+    btn.style.borderRadius = '12px';
     btn.style.cursor = 'pointer';
     btn.style.width = 'max-content';
-    btn.style.alignSelf = 'flex-start';
+    btn.style.whiteSpace = 'nowrap';
     btn.style.fontFamily = '-apple-system, system-ui, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif';
     btn.style.transition = 'transform 100ms';
 
     const copyIcon = `
-      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
         <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
       </svg>
@@ -187,13 +216,9 @@
       btn.style.transform = 'scale(1)';
     });
 
-    btn.addEventListener('click', () => {
+    btn.addEventListener('click', (e) => {
+      e.preventDefault();
       console.log('[LinkedIn JD Copier] Copy button clicked');
-      const containerToCopy = getJobDetailsContainer();
-      if (!containerToCopy) {
-        console.warn('[LinkedIn JD Copier] Job details container not found');
-        return;
-      }
       
       const elements = Array.from(containerToCopy.querySelectorAll('button, a, span, div, [role="button"]'));
       const showMoreBtns = elements.filter(b => {
@@ -219,18 +244,39 @@
       });
 
       const copyAction = () => {
-        const textToCopy = getCleanJobText(containerToCopy);
+        const plainText = getCleanJobText(containerToCopy);
 
-        copyText(textToCopy).then(() => {
+        let htmlText = '';
+        const descContainer = containerToCopy.querySelector('#job-details, .jobs-description__content, .jobs-description-content__text, .show-more-less-html__markup') ||
+                              document.getElementById('job-details') || 
+                              document.querySelector('.jobs-description__content');
+        if (descContainer) {
+          const clone = descContainer.cloneNode(true);
+          const cleanedNode = sanitizeHtmlNode(clone);
+          htmlText = cleanedNode.innerHTML;
+        } else {
+          const clone = containerToCopy.cloneNode(true);
+          const cleanedNode = sanitizeHtmlNode(clone);
+          htmlText = cleanedNode.innerHTML;
+        }
+
+        const currentWidth = btn.offsetWidth;
+        const currentHeight = btn.offsetHeight;
+        btn.style.width = `${currentWidth}px`;
+        btn.style.height = `${currentHeight}px`;
+
+        copyRichText(plainText, htmlText).then(() => {
           console.log('[LinkedIn JD Copier] Copy successful!');
           btn.innerHTML = `
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"/>
             </svg><span>Copied!</span>
           `;
           
           setTimeout(() => {
             btn.innerHTML = copyIcon + '<span>Copy JD</span>';
+            btn.style.width = 'max-content';
+            btn.style.height = 'auto';
           }, 2000);
         }).catch(err => {
           console.error('[LinkedIn JD Copier] Failed to copy:', err);
@@ -244,11 +290,21 @@
       }
     });
 
-    // Insert directly before the "About the job" heading
-    parent.insertBefore(btn, aboutHeader);
+    const wrapper = document.createElement('div');
+    wrapper.id = 'yt-header-wrapper';
+    wrapper.style.display = 'flex';
+    wrapper.style.alignItems = 'center';
+    wrapper.style.gap = '12px';
+    wrapper.style.marginBottom = window.getComputedStyle(aboutHeader).marginBottom || '16px';
+    
+    aboutHeader.style.marginBottom = '0';
+    aboutHeader.style.marginTop = '0';
+    
+    parent.insertBefore(wrapper, aboutHeader);
+    wrapper.appendChild(aboutHeader);
+    wrapper.appendChild(btn);
   };
 
-  // Poll DOM to handle SPA rendering cycles
   setInterval(() => {
     insertCopyButton();
   }, 500);
