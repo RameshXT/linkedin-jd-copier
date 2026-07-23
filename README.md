@@ -5,10 +5,11 @@ A lightweight Chrome Extension that adds a one-click button to copy job descript
 ![How it looks](img/image.png)
 
 ## Features
-- **Instant Copy**: Copy the entire job description plain text with a single click.
-- **Visual Feedback**: The button turns green and shows "Copied!" for a few seconds upon successful copying.
-- **Dynamic Injection**: Automatically detects and adds the button to new job postings as you navigate the list.
-- **Clean Output**: Automatically excludes the copy button text itself from the clipboard content.
+- **Inline Placement**: Positioned directly next to the "About the job" heading inside the job details card.
+- **Double-Format Copying**: Copies both a clean, structured plain-text layout and a style-stripped rich-text HTML format (preserving lists, headings, and links) for perfect pasting into Notion, Word, Google Docs, or ChatGPT.
+- **No-Flicker Transition**: Locks button dimensions during the copy action to prevent any layout shifting.
+- **SPA Resiliency**: Uses a background polling loop to stay active and responsive even when LinkedIn dynamically re-renders page layouts.
+- **Noisy UI Stripping**: Automatically removes all scripts, ads, buttons, and interactive widgets from the copied clipboard content.
 
 ## Installation
 1. Open Google Chrome.
